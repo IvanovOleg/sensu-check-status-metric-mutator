@@ -7,6 +7,11 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.3.1] - 2022-03-23
+
+### Changed
+- Updated tag list
+
 ## [0.3.0] - 2020-10-09
 
 ### Changed

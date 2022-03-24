@@ -2,6 +2,9 @@ name: Go Test
 
 on: [push]
 
+env:
+  go_version: 1.14.x
+
 jobs:
   test:
     name: Test
@@ -10,12 +13,14 @@ jobs:
       matrix:
         os: [macos-latest, windows-latest, ubuntu-latest]
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
-    - name: Set up Go 1.13
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.13
-      id: go
-    - name: Test
-      run: go test -v ./...
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ env.go_version }}
+        id: go
+
+      - name: Test
+        run: go test -v ./...

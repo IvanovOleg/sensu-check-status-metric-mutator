@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-sensu-check-status-metric-mutator
+sensu-influxdb-metric-mutator
 
 # Test binary, build with `go test -c`
 *.test

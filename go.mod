@@ -1,4 +1,4 @@
-module nixwiz/sensu-check-status-metric-mutator
+module IvanovOleg/sensu-influxdb-metric-mutator
 
 go 1.14
 

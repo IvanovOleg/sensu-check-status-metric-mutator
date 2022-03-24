@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/sensu-community/sensu-plugin-sdk/sensu"
 	"github.com/sensu-community/sensu-plugin-sdk/templates"
@@ -17,9 +18,9 @@ type Config struct {
 var (
 	mutatorConfig = Config{
 		PluginConfig: sensu.PluginConfig{
-			Name:     "sensu-check-status-metric-mutator",
-			Short:    "Sensu Check Status Metric Mutator",
-			Keyspace: "sensu.io/plugins/sensu-check-status-metric-mutator/config",
+			Name:     "sensu-influxdb-metric-mutator",
+			Short:    "Sensu InfluxDB Metric Mutator",
+			Keyspace: "sensu.io/plugins/sensu-influxdb-metric-mutator/config",
 		},
 	}
 
@@ -48,6 +49,14 @@ func checkArgs(_ *types.Event) error {
 	return nil
 }
 
+func ternaryFunction(first string, second string) string {
+	if first != "" {
+		return first
+	} else {
+		return second
+	}
+}
+
 func executeMutator(event *types.Event) (*types.Event, error) {
 	if !event.HasCheck() {
 		return &types.Event{}, fmt.Errorf("Event does not have a check defined.")
@@ -66,11 +75,18 @@ func executeMutator(event *types.Event) (*types.Event, error) {
 
 	// Provide some extra information in the tags
 	mt := make([]*types.MetricTag, 0)
-	mt = append(mt, &types.MetricTag{Name: "entity", Value: event.Entity.Name})
-	mt = append(mt, &types.MetricTag{Name: "check", Value: event.Check.Name})
-	mt = append(mt, &types.MetricTag{Name: "state", Value: event.Check.State})
-	mt = append(mt, &types.MetricTag{Name: "occurrences", Value: fmt.Sprintf("%d", event.Check.Occurrences)})
-	mt = append(mt, &types.MetricTag{Name: "occurrences_watermark", Value: fmt.Sprintf("%d", event.Check.OccurrencesWatermark)})
+	mt = append(mt, &types.MetricTag{Name: "critical", Value: event.Check.Labels["critical"]})
+	mt = append(mt, &types.MetricTag{Name: "deployment_uid", Value: "none"})
+	mt = append(mt, &types.MetricTag{Name: "host", Value: event.Entity.System.Hostname})
+	mt = append(mt, &types.MetricTag{Name: "metric_source", Value: "sensu"})
+	mt = append(mt, &types.MetricTag{Name: "name", Value: ternaryFunction(event.Check.Labels["display_name"], event.Check.Name)})
+	mt = append(mt, &types.MetricTag{Name: "product_id", Value: event.Check.Labels["product"]})
+	mt = append(mt, &types.MetricTag{Name: "ret_code", Value: strconv.FormatInt(int64(event.Check.Status), 10)})
+	mt = append(mt, &types.MetricTag{Name: "status", Value: strconv.FormatInt(int64(event.Check.Status), 10)})
+	mt = append(mt, &types.MetricTag{Name: "target_alias", Value: event.Check.Labels["service"]})
+	mt = append(mt, &types.MetricTag{Name: "type", Value: "sensu"})
+	mt = append(mt, &types.MetricTag{Name: "subproduct", Value: ternaryFunction(event.Check.Labels["subproduct"], event.Check.Labels["product"])})
+	mt = append(mt, &types.MetricTag{Name: "app_name", Value: ternaryFunction(event.Check.Labels["app_name"], event.Check.Labels["service"])})
 
 	mp := &types.MetricPoint{
 		Name:      metricName,
