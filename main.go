@@ -73,12 +73,23 @@ func executeMutator(event *types.Event) (*types.Event, error) {
 		event.Metrics = new(types.Metrics)
 	}
 
+	var status = event.Check.Status
+	var critical string
+	var status_int uint32
+	if event.Check.Labels["critical"] == "True" {
+		critical = "True"
+		status_int = status * 2
+	} else {
+		critical = "False"
+		status_int = status
+	}
+
 	// Provide some extra information in the tags
 	mt := make([]*types.MetricTag, 0)
-	mt = append(mt, &types.MetricTag{Name: "critical", Value: event.Check.Labels["critical"]})
+	mt = append(mt, &types.MetricTag{Name: "critical", Value: critical})
 	mt = append(mt, &types.MetricTag{Name: "deployment_uid", Value: "none"})
 	mt = append(mt, &types.MetricTag{Name: "host", Value: event.Entity.System.Hostname})
-	mt = append(mt, &types.MetricTag{Name: "metric_source", Value: "sensu"})
+	mt = append(mt, &types.MetricTag{Name: "metrics_source", Value: "sensu"})
 	mt = append(mt, &types.MetricTag{Name: "name", Value: ternaryFunction(event.Check.Labels["display_name"], event.Check.Name)})
 	mt = append(mt, &types.MetricTag{Name: "product_id", Value: event.Check.Labels["product"]})
 	mt = append(mt, &types.MetricTag{Name: "ret_code", Value: strconv.FormatInt(int64(event.Check.Status), 10)})
@@ -88,12 +99,37 @@ func executeMutator(event *types.Event) (*types.Event, error) {
 	mt = append(mt, &types.MetricTag{Name: "subproduct", Value: ternaryFunction(event.Check.Labels["subproduct"], event.Check.Labels["product"])})
 	mt = append(mt, &types.MetricTag{Name: "app_name", Value: ternaryFunction(event.Check.Labels["app_name"], event.Check.Labels["service"])})
 
-	mp := &types.MetricPoint{
-		Name:      metricName,
-		Value:     float64(event.Check.Status),
+	mp_duration := &types.MetricPoint{
+		Name:      metricName + ".integerType.duration",
+		Value:     float64(int(event.Check.Duration * 1000)),
 		Timestamp: event.Timestamp,
 		Tags:      mt,
 	}
-	event.Metrics.Points = append(event.Metrics.Points, mp)
+
+	mp_interval := &types.MetricPoint{
+		Name:      metricName + ".integerType.interval",
+		Value:     float64(event.Check.Interval),
+		Timestamp: event.Timestamp,
+		Tags:      mt,
+	}
+
+	mp_status_int := &types.MetricPoint{
+		Name:      metricName + ".integerType.status_int",
+		Value:     float64(status_int),
+		Timestamp: event.Timestamp,
+		Tags:      mt,
+	}
+
+	mp_status_value := &types.MetricPoint{
+		Name:      metricName + ".integerType.value",
+		Value:     1,
+		Timestamp: event.Timestamp,
+		Tags:      mt,
+	}
+
+	event.Metrics.Points = append(event.Metrics.Points, mp_duration)
+	event.Metrics.Points = append(event.Metrics.Points, mp_interval)
+	event.Metrics.Points = append(event.Metrics.Points, mp_status_int)
+	event.Metrics.Points = append(event.Metrics.Points, mp_status_value)
 	return event, nil
 }

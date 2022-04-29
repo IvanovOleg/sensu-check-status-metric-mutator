@@ -1,9 +1,10 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/sensu/sensu-go/types"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCheckArgs(t *testing.T) {
@@ -22,24 +23,27 @@ func TestExecuteMutator(t *testing.T) {
 	mutatorConfig.MetricNameTemplate = "check_name"
 	ev, err := executeMutator(event)
 	assert.NoError(err)
-	assert.Equal(len(ev.Metrics.Points), 1)
+	assert.Equal(len(ev.Metrics.Points), 4)
 	var mps []string
 	for _, v := range ev.Metrics.Points {
 		mps = append(mps, v.Name)
 	}
-	assert.Contains(mps, "check_name")
+	assert.Contains(mps, "check_name.integerType.duration")
+	assert.Contains(mps, "check_name.integerType.interval")
+	assert.Contains(mps, "check_name.integerType.status_int")
+	assert.Contains(mps, "check_name.integerType.value")
 
 	// Event with existing metrics
 	event.Metrics = types.FixtureMetrics()
 	ev, err = executeMutator(event)
 	assert.NoError(err)
-	assert.Equal(len(ev.Metrics.Points), 2)
+	assert.Equal(len(ev.Metrics.Points), 5)
 	mps = nil
 	for _, v := range ev.Metrics.Points {
 		mps = append(mps, v.Name)
 	}
 	assert.Contains(mps, "answer")
-	assert.Contains(mps, "check_name")
+	assert.Contains(mps, "check_name.integerType.value")
 
 	// Event without check
 	event.Check = nil
